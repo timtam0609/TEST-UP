@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div id="over_wrap" class="flex">
+        <div id="side_bar">
+            <div id="icon"></div>
+            <div id="filters">
+                <div>
+                    <hr />
+                    <h4>検索条件</h4>
+                    <label for="searchKeyword" class="filters_text">検索キーワード:</label>
+                    <input type="text" id="searchKeyword" class="filters_input" />
+                    <br />
+                    <label for="maxResults" class="filters_text">最大結果数:</label>
+                    <input type="number"
+                           id="maxResults"
+                           min="1"
+                           value="10"
+                           class="filters_input" />
+                    <br />
+                    <label for="order" class="filters_text">並び順:</label>
+                    <select id="order" class="filters_select">
+                        <option value="viewCount">再生回数</option>
+                        <option value="relevance">関連度</option>
+                        <option value="date">日付</option>
+                        <option value="rating">評価</option>
+                    </select>
+                    <br />
+                    <label for="category" class="filters_text">カテゴリー:</label>
+                    <select id="category" class="filters_select">
+                        <option value="">すべてのカテゴリー</option>
+                        <option value="1">映画とアニメ</option>
+                        <option value="2">自動車と乗り物</option>
+                        <option value="10">音楽</option>
+                        <option value="15">ペットと動物</option>
+                        <option value="17">スポーツ</option>
+                        <option value="19">旅行とイベント</option>
+                        <option value="20">ゲーム</option>
+                        <option value="22">ブログ</option>
+                        <option value="23">コメディー</option>
+                        <option value="24">エンターテイメント</option>
+                        <option value="25">ニュースと政治</option>
+                        <option value="26">ハウツーとスタイル</option>
+                        <option value="27">教育</option>
+                        <option value="28">科学と技術</option>
+                    </select>
+                    <br />
+                    <label for="videoDuration" class="filters_text">動画時間:</label>
+                    <select id="videoDuration" class="filters_select">
+                        <option value="">すべての動画</option>
+                        <option value="short">4分未満</option>
+                        <option value="medium">4分以上 20分未満</option>
+                        <option value="long">20分以上</option>
+                    </select>
+                    <br />
+                    <label for="publishedAfter" class="filters_text">公開日:</label>
+                    <br />
+                    <input type="date" id="publishedAfter" class="filters_input_2" />
+                    <label for="publishedBefore" class="filters_text">～</label>
+                    <input type="date" id="publishedBefore" class="filters_input_2" />
+                    <br />
+                </div>
+                <div>
+                    <hr />
+                    <h4>絞り込み</h4>
+                    <label for="minViews" class="filters_text">再生回数:</label>
+                    <br />
+                    <input type="number"
+                           id="minViews"
+                           min="0"
+                           class="filters_input_2" />
+                    <label for="maxViews" class="filters_text">～</label>
+                    <input type="number"
+                           id="maxViews"
+                           min="0"
+                           class="filters_input_2" />
+                    <br />
+                    <label for="minSubscriber" class="filters_text">チャンネル登録者数:</label>
+                    <br />
+                    <input type="number"
+                           id="minSubscriber"
+                           min="0"
+                           class="filters_input_2" />
+                    <label for="maxSubscriber" class="filters_text">～</label>
+                    <input type="number"
+                           id="maxSubscriber"
+                           min="0"
+                           class="filters_input_2" />
+                    <br />
+                    <label for="movieDetail" class="filters_text">
+                        <input type="checkbox" id="movieDetail" checked />動画情報を取得
+                    </label>
+                    <br />
+                    <label for="channelDetail" class="filters_text">
+                        <input type="checkbox"
+                               id="channelDetail"
+                               checked />チャンネル情報を取得
+                    </label>
+                </div>
+            </div>
+            <div id="search">
+                <button onclick="searchVideos()"
+                        class="filters_input"
+                        id="search_btn">
+                    検索
+                </button>
+            </div>
+        </div>
+        <div id="main">
+            <div id="head">
+                <input type="text" id="apiKey" placeholder="API KEY" />
+            </div>
+            <div id="body">
+                <div id="contents">
+                    <div id="searchResults"></div>
+                </div>
+                <div id="action_bar">
+                    <button class="action_btn">CSV出力</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        async function searchVideos() {
+            const apiKey = document.getElementById("apiKey").value;
+            const searchKeyword = document.getElementById("searchKeyword").value;
+            const maxResults = document.getElementById("maxResults").value;
+            const order = document.getElementById("order").value;
+            const category = document.getElementById("category").value;
+            const videoDuration = document.getElementById("videoDuration").value;
+            const publishedAfter = document.getElementById("publishedAfter").value
+                ? new Date(
+                    document.getElementById("publishedAfter").value
+                ).toISOString()
+                : "";
+            const publishedBefore = document.getElementById("publishedBefore").value
+                ? new Date(
+                    document.getElementById("publishedBefore").value
+                ).toISOString()
+                : "";
+            const minViews = document.getElementById("minViews").value || 0;
+            const maxViews =
+                document.getElementById("maxViews").value || 1000000000000000;
+            const minSubscriber =
+                document.getElementById("minSubscriber").value || 0;
+            const maxSubscriber =
+                document.getElementById("maxSubscriber").value || 1000000000000000;
+            const movieDetail = document.getElementById("movieDetail").checked;
+            const channelDetail = document.getElementById("channelDetail").checked;
+
+            let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=${maxResults}&q=${searchKeyword}&order=${order}&regionCode=jp&key=${apiKey}`;
+            if (publishedAfter) {
+                url += `&publishedAfter=${publishedAfter}`;
+            }
+            if (publishedBefore) {
+                url += `&publishedBefore=${publishedBefore}`;
+            }
+            if (category) {
+                url += `&videoCategoryId=${category}`;
+            }
+            if (videoDuration) {
+                url += `&videoDuration=${videoDuration}`;
+            }
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            const searchResultsDiv = document.getElementById("searchResults");
+            searchResultsDiv.innerHTML = "";
+
+            // 表示番号
+            let num = 0;
+            for (const item of data.items) {
+                num++;
+                const title = item.snippet.title;
+                const videoId = item.id.videoId;
+                let videoThumbnailUrl = item.snippet.thumbnails.high.url;
+                let videoPublishedAt = item.snippet.publishedAt.replace(/T.*$/, "");
+                let channelId = item.snippet.channelId;
+                let description = item.snippet.description;
+                if (description.includes("\n")) {
+                    description = description.replace(/\n/g, "<br>");
+                }
+
+                let videoResponse;
+                let videoData;
+                let viewCount;
+                let tags;
+                let likeCount;
+                let commentCount;
+                let likeRatio;
+                let commentRatio;
+                // 動画情報を取得するか
+                if (movieDetail == true) {
+                    // エラー回避
+                    if (videoId == undefined) {
+                        continue;
+                    }
+                    // 動画の詳細情報を取得
+                    videoResponse = await fetch(
+                        `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoId}&key=${apiKey}`
+                    );
+                    videoData = await videoResponse.json();
+                    viewCount = videoData.items[0].statistics.viewCount;
+                    if (channelId == undefined) {
+                        channelId = videoData.items[0].snippet.channelId;
+                    }
+                    tags = videoData.items[0].snippet.tags;
+                    description = videoData.items[0].snippet.description;
+                    if (description.includes("\n")) {
+                        description = description.replace(/\n/g, "<br>");
+                    }
+                    likeCount = videoData.items[0].statistics.likeCount;
+                    commentCount = videoData.items[0].statistics.commentCount;
+
+                    // 再生回数が指定した下限値未満の場合、スキップする
+                    if (
+                        parseInt(viewCount) < parseInt(minViews) ||
+                        parseInt(viewCount) > parseInt(maxViews)
+                    ) {
+                        continue;
+                    }
+                    // エンゲージメント計算
+                    likeRatio = (parseInt(likeCount) / parseInt(viewCount)) * 100;
+                    commentRatio = (parseInt(commentCount) / parseInt(viewCount)) * 100;
+                    likeRatio = likeRatio.toFixed(2);
+                    commentRatio = commentRatio.toFixed(2);
+                }
+
+                let channelResponse;
+                let channelData;
+                let subscriberCount;
+                let channelPublishedAt;
+                let channelThumbnailUrl;
+                let channelName;
+                if (channelDetail == true) {
+                    // エラー回避
+                    if (channelId == undefined) {
+                        continue;
+                    }
+                    // チャンネルの詳細情報を取得
+                    channelResponse = await fetch(
+                        `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${apiKey}`
+                    );
+                    channelData = await channelResponse.json();
+                    subscriberCount = channelData.items[0].statistics.subscriberCount;
+                    channelPublishedAt =
+                        channelData.items[0].snippet.publishedAt.replace(/T.*$/, "");
+                    channelThumbnailUrl =
+                        channelData.items[0].snippet.thumbnails.high.url;
+                    channelName = channelData.items[0].snippet.title;
+
+                    // チャンネル登録者数が指定した下限値未満の場合、スキップする
+                    if (
+                        parseInt(subscriberCount) < parseInt(minSubscriber) ||
+                        parseInt(subscriberCount) > parseInt(maxSubscriber)
+                    ) {
+                        continue;
+                    }
+
+                    // 登録者数を丸める
+                    if (subscriberCount.length >= 4) {
+                        subscriberCount = subscriberCount.replace(/(\d{3})\d{3}$/, "$1k");
+                    }
+                }
+
+                let divText = `
+                        <div id="content">
+                            <h3>${title}</h3>
+                            <div class="flex">
+                                <div id="videoThumbnail">
+                                    <img src="${videoThumbnailUrl}" alt="サムネイル">
+                                </div>
+                                <div id="data">
+                                    <p>公開日時: ${videoPublishedAt}</p>
+                                    <p>概要欄: ${description}</p>
+                                    <p><a href="https://www.youtube.com/watch?v=${videoId}" target="_blank">YouTube で見る</a></p>
+                                </div>
+                            </div>
+                        </div>
+                        `;
+                if (movieDetail == true) {
+                    divText = `
+                    <div id="content">
+                        <h3>${title}</h3>
+                        <div class="flex">
+                            <div id="videoThumbnail">
+                                <img src="${videoThumbnailUrl}" alt="サムネイル">
+                            </div>
+                            <div id="data">
+                                <p>公開日時: ${videoPublishedAt}</p>
+                                <p>再生回数: ${viewCount}</p>
+                                <p>いいね数: ${likeCount}</p>
+                                <p>コメント数: ${commentCount}</p>
+                                <p>タグ: ${tags}</p>
+                                <p>概要欄: ${description}</p>
+                                <p><a href="https://www.youtube.com/watch?v=${videoId}" target="_blank">YouTube で見る</a></p>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                }
+                if (channelDetail == true) {
+                    divText = `
+                    <div id="content">
+                        <h3>${title}</h3>
+                        <div class="flex">
+                            <div id="videoThumbnail">
+                                <img src="${videoThumbnailUrl}" alt="サムネイル">
+                            </div>
+                            <div id="data">
+                                <p>公開日時: ${videoPublishedAt}</p>
+                                <p>概要欄: ${description}</p>
+                                <img src="${channelThumbnailUrl}" alt="アイコン">
+                                <p>チャンネル名: ${channelName}</p>
+                                <p>チャンネル登録者数: ${subscriberCount}</p>
+                                <p>チャンネル作成日時: ${channelPublishedAt}</p>
+                                <p><a href="https://www.youtube.com/watch?v=${videoId}" target="_blank">YouTube で見る</a></p>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                }
+                if (movieDetail == true && channelDetail && true) {
+                    divText = `
+                    <div id="content">
+                        <h3>${title}</h3>
+                        <div class="flex">
+                            <div id="videoThumbnail">
+                                <img src="${videoThumbnailUrl}" alt="サムネイル">
+                            </div>
+                            <div id="data">
+                                <p>公開日時: ${videoPublishedAt}</p>
+                                <p>再生回数: ${viewCount}</p>
+                                <p>いいね数: ${likeCount}</p>
+                                <p>コメント数: ${commentCount}</p>
+                                <p>タグ: ${tags}</p>
+                                <p>概要欄: ${description}</p>
+                                <img src="${channelThumbnailUrl}" alt="アイコン">
+                                <p>チャンネル名: ${channelName}</p>
+                                <p>チャンネル登録者数: ${subscriberCount}</p>
+                                <p>チャンネル作成日時: ${channelPublishedAt}</p>
+                                <p><a href="https://www.youtube.com/watch?v=${videoId}" target="_blank">YouTube で見る</a></p>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                }
+                if (movieDetail == true && channelDetail && true) {
+                    divText = `
+                    <div class="content">
+                        <h3>${title}</h3>
+                        <div class="flex">
+                            <div class="videoThumbnail">
+                                <a href="https://www.youtube.com/watch?v=${videoId}" target="_blank">
+                                    <img src="${videoThumbnailUrl}" alt="サムネイル" class="thumbnail">
+                                    <span class="thumbnailText">YouTube で見る</span>
+                                </a>
+                            </div>
+                            <div class="datas">
+                                <div class="videoData">
+                                    <p>公開日: ${videoPublishedAt}</p>
+                                    <span>再生数: ${viewCount}</span>
+                                    <span>いいね: ${likeCount}</span>
+                                    <span>コメント: ${commentCount}</span>
+                                    <p>
+                                        <span>いいね率:${likeRatio}%</span>
+                                        <span>コメント率:${commentRatio}%</span>
+                                    </p>
+                                    <p>タグ: ${tags}</p>
+                                    <a href="#" id="description_click_${num}" onclick="description_click(${num})">概要欄を表示</a>
+                                    <p hidden id="description_${num}">${description}</p>
+                                </div>
+                                <div class="channelData">
+                                    <div class="flex">
+                                        <a href="https://www.youtube.com/channel/${channelId}" target="_blank" class="channelLink">
+                                            <img src="${channelThumbnailUrl}" alt="アイコン" class="icon">
+                                            <span>${channelName}/</span>
+                                            <span>${subscriberCount}</span>
+                                        </a>
+                                    </div>
+                                    <p>開設日: ${channelPublishedAt}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                }
+
+                // 表示項目の作成
+                const resultDiv = document.createElement("div");
+                resultDiv.innerHTML = divText;
+                searchResultsDiv.appendChild(resultDiv);
+            }
+        }
+
+        // 概要欄の表示 表示番号を引数
+        function description_click(num) {
+            const description = document.getElementById("description_" + num);
+            const description_click = document.getElementById(
+                "description_click_" + num
+            );
+            if (description.hidden) {
+                description.removeAttribute("hidden");
+                description_click.innerHTML = "概要欄を非表示";
+            } else {
+                description.setAttribute("hidden", "true");
+                description_click.innerHTML = "概要欄を表示";
+            }
+        }
+    </script>
+</body>
+</html>
